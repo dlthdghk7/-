@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>멋진 테트리스 게임 제작 전략 가이드</title>
+  <style>
+    :root{
+      --bg:#07111f;
+      --panel:#0d1b2a;
+      --panel2:#11263a;
+      --text:#eaf6ff;
+      --muted:#9fc0d9;
+      --cyan:#34d9ff;
+      --purple:#a879ff;
+      --yellow:#ffd166;
+      --green:#5ee6a8;
+      --red:#ff6b7a;
+      --line:rgba(255,255,255,.1);
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      font-family:Arial,"Noto Sans KR",sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at 15% 10%, rgba(52,217,255,.15), transparent 25%),
+        radial-gradient(circle at 85% 20%, rgba(168,121,255,.13), transparent 25%),
+        linear-gradient(160deg,#050a12,#081522 45%,#091a2b);
+      line-height:1.72;
+    }
+    a{color:var(--cyan);text-decoration:none}
+    .wrap{width:min(1100px,92%);margin:auto}
+    header{
+      min-height:78vh;
+      display:grid;
+      place-items:center;
+      text-align:center;
+      padding:70px 0 45px;
+    }
+    .badge{
+      display:inline-block;
+      padding:8px 14px;
+      border:1px solid rgba(52,217,255,.45);
+      border-radius:999px;
+      color:var(--cyan);
+      background:rgba(52,217,255,.08);
+      font-weight:700;
+      letter-spacing:.05em;
+    }
+    h1{
+      font-size:clamp(2.4rem,6vw,5.4rem);
+      line-height:1.05;
+      margin:22px 0 18px;
+      background:linear-gradient(90deg,#fff,var(--cyan),var(--purple));
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
+    }
+    .lead{
+      max-width:760px;
+      margin:0 auto 28px;
+      font-size:1.15rem;
+      color:var(--muted);
+    }
+    .hero-grid{
+      margin:38px auto 0;
+      display:grid;
+      grid-template-columns:repeat(4,54px);
+      gap:7px;
+      width:max-content;
+      transform:rotate(-2deg);
+    }
+    .hero-grid span{
+      width:54px;height:54px;border-radius:8px;
+      box-shadow:inset 0 0 0 2px rgba(255,255,255,.18),0 10px 25px rgba(0,0,0,.25);
+    }
+    .c1{background:#36d7ff}.c2{background:#a879ff}.c3{background:#ffd166}.c4{background:#5ee6a8}.c5{background:#ff6b7a}
+    nav{
+      position:sticky;top:0;z-index:10;
+      backdrop-filter:blur(14px);
+      background:rgba(5,10,18,.82);
+      border-top:1px solid var(--line);
+      border-bottom:1px solid var(--line);
+    }
+    nav .wrap{display:flex;gap:20px;overflow:auto;padding:13px 0;white-space:nowrap}
+    section{padding:72px 0}
+    h2{font-size:2rem;margin:0 0 18px}
+    h3{margin-top:0}
+    .sub{color:var(--muted);max-width:850px}
+    .grid{display:grid;gap:20px}
+    .grid-2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+    .grid-3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+    .card{
+      background:linear-gradient(150deg,rgba(17,38,58,.96),rgba(9,25,42,.96));
+      border:1px solid var(--line);
+      border-radius:20px;
+      padding:24px;
+      box-shadow:0 18px 45px rgba(0,0,0,.22);
+    }
+    .num{
+      display:inline-grid;place-items:center;
+      width:38px;height:38px;border-radius:11px;
+      background:linear-gradient(135deg,var(--cyan),var(--purple));
+      color:#05101b;font-weight:900;margin-bottom:12px;
+    }
+    .pill{
+      display:inline-block;padding:5px 10px;border-radius:999px;
+      background:rgba(94,230,168,.1);color:var(--green);
+      border:1px solid rgba(94,230,168,.25);font-size:.88rem;
+    }
+    .roadmap{counter-reset:step}
+    .step{
+      position:relative;padding-left:72px;margin:30px 0;
+    }
+    .step:before{
+      counter-increment:step;content:counter(step);
+      position:absolute;left:0;top:0;width:48px;height:48px;
+      display:grid;place-items:center;border-radius:50%;
+      background:linear-gradient(135deg,var(--yellow),var(--red));
+      color:#17110a;font-weight:900;
+    }
+    code,pre{font-family:Consolas,Monaco,monospace}
+    pre{
+      overflow:auto;
+      padding:20px;
+      border-radius:16px;
+      background:#02070d;
+      border:1px solid rgba(52,217,255,.18);
+      color:#d7f5ff;
+      line-height:1.55;
+      font-size:.92rem;
+    }
+    table{
+      width:100%;border-collapse:collapse;margin-top:18px;
+      background:rgba(255,255,255,.02);
+    }
+    th,td{padding:14px;border:1px solid var(--line);text-align:left}
+    th{background:rgba(52,217,255,.08);color:var(--cyan)}
+    .check li{margin:10px 0}
+    .tip{
+      border-left:4px solid var(--yellow);
+      padding:16px 18px;
+      background:rgba(255,209,102,.07);
+      border-radius:0 12px 12px 0;
+    }
+    .danger{
+      border-left-color:var(--red);
+      background:rgba(255,107,122,.07);
+    }
+    footer{
+      text-align:center;padding:48px 0 70px;color:var(--muted);
+      border-top:1px solid var(--line);
+    }
+    .btn{
+      display:inline-block;margin-top:10px;padding:12px 20px;border-radius:12px;
+      background:linear-gradient(90deg,var(--cyan),var(--purple));
+      color:#07111f;font-weight:900;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <span class="badge">HTML · CSS · JavaScript 교육 자료</span>
+      <h1>멋진 테트리스 게임<br>제작 전략 가이드</h1>
+      <p class="lead">
+        단순히 블록을 떨어뜨리는 게임이 아니라, 구조가 탄탄하고 디자인이 세련되며
+        점수·레벨·효과음까지 갖춘 완성형 테트리스를 만드는 방법을 단계별로 배웁니다.
+      </p>
+      <div class="hero-grid" aria-label="테트리스 블록 장식">
+        <span class="c1"></span><span class="c1"></span><span class="c2"></span><span class="c2"></span>
+        <span class="c3"></span><span class="c1"></span><span class="c4"></span><span class="c2"></span>
+        <span class="c3"></span><span class="c5"></span><span class="c4"></span><span class="c4"></span>
+      </div>
+    </div>
+  </header>
+
+  <nav>
+    <div class="wrap">
+      <a href="#goal">목표</a>
+      <a href="#strategy">제작 전략</a>
+      <a href="#logic">핵심 로직</a>
+      <a href="#structure">파일 구조</a>
+      <a href="#code">예제 코드</a>
+      <a href="#design">디자인</a>
+      <a href="#upgrade">고급 기능</a>
+      <a href="#checklist">완성 체크</a>
+    </div>
+  </nav>
+
+  <main>
+    <section id="goal">
+      <div class="wrap">
+        <span class="pill">1. 프로젝트 목표</span>
+        <h2>우리가 만들 테트리스</h2>
+        <p class="sub">
+          초보자는 먼저 기본 동작을 완성하고, 그다음 디자인과 기능을 추가해야 합니다.
+          처음부터 모든 기능을 한꺼번에 넣으면 오류를 찾기 어려워집니다.
+        </p>
+        <div class="grid grid-3">
+          <article class="card">
+            <div class="num">A</div>
+            <h3>기본 게임</h3>
+            <p>블록 생성, 이동, 회전, 충돌, 줄 삭제, 게임 오버를 구현합니다.</p>
+          </article>
+          <article class="card">
+            <div class="num">B</div>
+            <h3>재미 요소</h3>
+            <p>점수, 레벨, 속도 증가, 다음 블록, 일시정지 기능을 넣습니다.</p>
+          </article>
+          <article class="card">
+            <div class="num">C</div>
+            <h3>멋진 연출</h3>
+            <p>네온 디자인, 애니메이션, 효과음, 반응형 화면을 적용합니다.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="strategy">
+      <div class="wrap">
+        <span class="pill">2. 전체 제작 전략</span>
+        <h2>작은 기능부터 차례로 완성하기</h2>
+        <div class="roadmap">
+          <div class="step">
+            <h3>게임판부터 만든다</h3>
+            <p>가로 10칸, 세로 20칸의 2차원 배열을 만듭니다. 빈칸은 0, 블록이 있는 칸은 숫자로 저장합니다.</p>
+          </div>
+          <div class="step">
+            <h3>테트로미노 7종을 정의한다</h3>
+            <p>I, J, L, O, S, T, Z 블록을 작은 2차원 배열로 만들어 관리합니다.</p>
+          </div>
+          <div class="step">
+            <h3>키보드 조작을 연결한다</h3>
+            <p>왼쪽·오른쪽 이동, 아래로 내리기, 위쪽 키로 회전, 스페이스바로 즉시 낙하를 구현합니다.</p>
+          </div>
+          <div class="step">
+            <h3>충돌 판정을 만든다</h3>
+            <p>벽, 바닥, 이미 쌓인 블록과 겹치지 않는지 검사합니다.</p>
+          </div>
+          <div class="step">
+            <h3>줄 삭제와 점수를 넣는다</h3>
+            <p>가득 찬 줄을 제거하고 위의 줄을 아래로 내립니다. 여러 줄을 한 번에 지우면 보너스를 줍니다.</p>
+          </div>
+          <div class="step">
+            <h3>마지막에 디자인을 강화한다</h3>
+            <p>게임이 정상 작동한 뒤 네온 색상, 그림자, 파티클, 사운드, 모바일 버튼을 추가합니다.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="logic">
+      <div class="wrap">
+        <span class="pill">3. 핵심 게임 로직</span>
+        <h2>테트리스가 움직이는 원리</h2>
+        <div class="grid grid-2">
+          <div class="card">
+            <h3>게임판 배열</h3>
+            <pre><code>const ROWS = 20;
+const COLS = 10;
+
+const board = Array.from(
+  { length: ROWS },
+  () => Array(COLS).fill(0)
+);</code></pre>
+          </div>
+          <div class="card">
+            <h3>현재 블록 정보</h3>
+            <pre><code>const player = {
+  matrix: null,
+  x: 3,
+  y: 0,
+  score: 0,
+  level: 1
+};</code></pre>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr><th>기능</th><th>핵심 질문</th><th>처리 방법</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>이동</td><td>옆으로 한 칸 갈 수 있는가?</td><td>이동 후 충돌하면 원래 위치로 복구</td></tr>
+            <tr><td>회전</td><td>회전한 모양이 벽에 닿는가?</td><td>행과 열을 바꾸고 순서를 뒤집기</td></tr>
+            <tr><td>낙하</td><td>아래 칸이 비어 있는가?</td><td>비어 있으면 y 증가, 아니면 보드에 고정</td></tr>
+            <tr><td>줄 삭제</td><td>한 줄에 빈칸이 없는가?</td><td>해당 줄 제거 후 빈 줄을 맨 위에 추가</td></tr>
+            <tr><td>게임 오버</td><td>새 블록이 시작부터 충돌하는가?</td><td>게임 중단 후 재시작 버튼 표시</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="structure">
+      <div class="wrap">
+        <span class="pill">4. 추천 파일 구조</span>
+        <h2>처음에는 3개 파일로 나누기</h2>
+        <div class="card">
+          <pre><code>tetris-project/
+├── index.html   # 화면 구조
+├── style.css    # 디자인과 반응형 화면
+├── game.js      # 테트리스 게임 로직
+└── assets/
+    ├── music.mp3
+    ├── move.wav
+    └── clear.wav</code></pre>
+          <p class="tip">
+            연습 단계에서는 모든 코드를 하나의 <strong>index.html</strong> 파일에 넣어도 됩니다.
+            기능이 많아지면 HTML, CSS, JavaScript를 분리하는 편이 관리하기 쉽습니다.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="code">
+      <div class="wrap">
+        <span class="pill">5. 핵심 예제 코드</span>
+        <h2>회전·충돌·줄 삭제의 기본 형태</h2>
+
+        <div class="card">
+          <h3>블록 회전</h3>
+          <pre><code>function rotate(matrix) {
+  return matrix[0].map((_, columnIndex) =>
+    matrix.map(row => row[columnIndex]).reverse()
+  );
+}</code></pre>
+        </div>
+
+        <div class="card">
+          <h3>충돌 판정</h3>
+          <pre><code>function collide(board, player) {
+  const { matrix, x, y } = player;
+
+  for (let row = 0; row &lt; matrix.length; row++) {
+    for (let col = 0; col &lt; matrix[row].length; col++) {
+      if (
+        matrix[row][col] !== 0 &&
+        (
+          board[y + row] === undefined ||
+          board[y + row][x + col] === undefined ||
+          board[y + row][x + col] !== 0
+        )
+      ) {
+        return true;
+      }
+    }
+  }
+  return false;
+}</code></pre>
+        </div>
+
+        <div class="card">
+          <h3>완성된 줄 삭제</h3>
+          <pre><code>function clearLines() {
+  let lines = 0;
+
+  for (let y = board.length - 1; y >= 0; y--) {
+    if (board[y].every(cell => cell !== 0)) {
+      board.splice(y, 1);
+      board.unshift(Array(COLS).fill(0));
+      lines++;
+      y++;
+    }
+  }
+
+  const scoreTable = [0, 100, 300, 500, 800];
+  player.score += scoreTable[lines] * player.level;
+}</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section id="design">
+      <div class="wrap">
+        <span class="pill">6. 멋지게 보이게 만드는 법</span>
+        <h2>게임의 품질은 시각·소리·반응에서 결정됩니다</h2>
+        <div class="grid grid-3">
+          <article class="card">
+            <h3>네온 블록</h3>
+            <p>각 블록에 밝은 색상, 내부 하이라이트, 바깥쪽 그림자를 넣습니다.</p>
+          </article>
+          <article class="card">
+            <h3>부드러운 애니메이션</h3>
+            <p>줄 삭제 순간에 짧은 빛 효과와 흔들림 효과를 넣습니다.</p>
+          </article>
+          <article class="card">
+            <h3>사운드 피드백</h3>
+            <p>이동, 회전, 고정, 줄 삭제, 게임 오버마다 다른 효과음을 사용합니다.</p>
+          </article>
+          <article class="card">
+            <h3>다음 블록 표시</h3>
+            <p>플레이어가 미리 전략을 세울 수 있도록 다음 블록을 보여줍니다.</p>
+          </article>
+          <article class="card">
+            <h3>고스트 블록</h3>
+            <p>현재 블록이 떨어질 위치를 반투명하게 표시합니다.</p>
+          </article>
+          <article class="card">
+            <h3>모바일 조작</h3>
+            <p>화면 아래에 좌우·회전·낙하 버튼을 배치합니다.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="upgrade">
+      <div class="wrap">
+        <span class="pill">7. 고급 발전 아이디어</span>
+        <h2>기본 완성 후 추가할 기능</h2>
+        <div class="grid grid-2">
+          <div class="card">
+            <h3>게임 기능</h3>
+            <ul class="check">
+              <li>홀드 블록 기능</li>
+              <li>콤보 및 백투백 보너스</li>
+              <li>레벨별 배경 변화</li>
+              <li>최고 점수 저장</li>
+              <li>일시정지 및 재시작</li>
+              <li>난이도 선택</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>기술 발전</h3>
+            <ul class="check">
+              <li>LocalStorage로 최고 점수 저장</li>
+              <li>Canvas API로 빠른 화면 렌더링</li>
+              <li>Web Audio API로 사운드 제어</li>
+              <li>GitHub Pages로 무료 공개</li>
+              <li>PWA로 스마트폰 설치 지원</li>
+              <li>온라인 순위표 연결</li>
+            </ul>
+          </div>
+        </div>
+        <p class="tip danger">
+          다른 게임의 이름, 로고, 음악, 그래픽을 그대로 복제하지 말고 직접 만든 디자인과 사운드를 사용하는 것이 안전합니다.
+        </p>
+      </div>
+    </section>
+
+    <section id="checklist">
+      <div class="wrap">
+        <span class="pill">8. 완성 체크리스트</span>
+        <h2>아래 항목이 모두 되면 1차 완성입니다</h2>
+        <div class="card">
+          <ul class="check">
+            <li>게임판이 10×20 크기로 표시된다.</li>
+            <li>7종 블록이 무작위로 등장한다.</li>
+            <li>좌우 이동과 회전이 정상 작동한다.</li>
+            <li>블록이 바닥이나 다른 블록 위에 고정된다.</li>
+            <li>완성된 줄이 삭제된다.</li>
+            <li>점수와 레벨이 표시된다.</li>
+            <li>블록이 맨 위까지 쌓이면 게임 오버가 된다.</li>
+            <li>재시작 버튼으로 다시 시작할 수 있다.</li>
+            <li>휴대폰 화면에서도 UI가 깨지지 않는다.</li>
+            <li>효과음과 애니메이션이 과하지 않다.</li>
+          </ul>
+        </div>
+        <div class="card" style="margin-top:20px;text-align:center">
+          <h3>추천 개발 순서</h3>
+          <p>기본 동작 완성 → 오류 수정 → 점수와 레벨 → 디자인 → 효과음 → 모바일 대응 → 배포</p>
+          <a class="btn" href="#goal">처음부터 다시 보기</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <strong>멋진 테트리스 게임 제작 전략 가이드</strong><br>
+      HTML, CSS, JavaScript를 배우면서 실제 게임 프로젝트를 완성해 보세요.
+    </div>
+  </footer>
+</body>
+</html>
